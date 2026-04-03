@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SDK Fashions - Cart</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #f5f5f5; }
+    .navbar { background: #2874f0; padding: 1rem 2rem; display: flex; align-items: center; gap: 1rem; }
+    .navbar a { color: white; text-decoration: none; font-size: 1.2rem; font-weight: bold; }
+    .navbar h2 { color: white; font-size: 1.1rem; margin-left: auto; margin-right: auto; }
+    .container { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; display: grid; grid-template-columns: 1fr 350px; gap: 1rem; }
+    .cart-items { background: white; border-radius: 4px; padding: 1rem; }
+    .cart-item { display: flex; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid #f0f0f0; align-items: center; }
+    .cart-item img { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; }
+    .cart-item .details { flex: 1; }
+    .cart-item .name { font-size: 15px; margin-bottom: 4px; }
+    .cart-item .price { color: #2874f0; font-weight: bold; }
+    .qty-controls { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .qty-btn { width: 28px; height: 28px; border: 1px solid #ddd; background: white; cursor: pointer; font-size: 16px; border-radius: 2px; }
+    .qty-num { font-size: 15px; min-width: 20px; text-align: center; }
+    .btn-remove { color: #e94560; background: none; border: none; cursor: pointer; font-size: 13px; margin-left: auto; }
+    .empty-cart { text-align: center; padding: 3rem; color: #666; }
+    .summary { background: white; border-radius: 4px; padding: 1rem; height: fit-content; position: sticky; top: 80px; }
+    .summary h3 { color: #878787; font-size: 13px; border-bottom: 1px solid #f0f0f0; padding-bottom: 8px; margin-bottom: 1rem; }
+    .summary-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; }
+    .summary-row.total { font-weight: bold; font-size: 16px; border-top: 1px solid #f0f0f0; padding-top: 8px; margin-top: 8px; }
+    .btn-checkout { width: 100%; padding: 14px; background: #fb641b; color: white; border: none; border-radius: 2px; font-size: 16px; cursor: pointer; margin-top: 1rem; }
+    .btn-checkout:hover { background: #e85d0f; }
+    .address-form { margin-top: 1rem; display: none; }
+    .address-form h3 { margin-bottom: 1rem; font-size: 15px; }
+    .address-form input { width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+    .payment-options { margin: 1rem 0; }
+    .payment-options h3 { font-size: 14px; margin-bottom: 8px; }
+    .payment-opt { display: flex; align-items: center; gap: 8px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px; cursor: pointer; }
+    .payment-opt input { width: auto; margin: 0; }
+    .payment-opt.selected { border-color: #2874f0; background: #f0f5ff; }
+    .btn-place-order { width: 100%; padding: 14px; background: #fb641b; color: white; border: none; border-radius: 2px; font-size: 16px; cursor: pointer; }
+    @media (max-width: 768px) { .container { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/">← SDK Fashions</a>
+  <h2>Shopping Cart</h2>
+</nav>
+
+<div class="container">
+  <!-- Cart Items -->
+  <div class="cart-items" id="cartItems">
+    <p>Loading...</p>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary">
+    <h3>PRICE DETAILS</h3>
+    <div class="summary-row"><span>Items</span><span id="itemCount">0</span></div>
+    <div class="summary-row"><span>Total Price</span><span id="totalPrice">₹0</span></div>
+    <div class="summary-row"><span>Delivery</span><span id="deliveryCharge" style="color:green;">FREE</span></div>
+    <div class="summary-row total"><span>Total Amount</span><span id="totalAmount">₹0</span></div>
+
+    <button class="btn-checkout" onclick="showCheckout()">Proceed to Checkout</button>
+
+    <!-- Address Form -->
+    <div class="address-form" id="addressForm">
+      <h3>Delivery Address</h3>
+      <input type="text" id="addrName" placeholder="Full Name" />
+      <input type="text" id="addrPhone" placeholder="Phone Number" />
+      <input type="text" id="addrStreet" placeholder="Street Address" />
+      <input type="text" id="addrCity" placeholder="City" />
+      <input type="text" id="addrState" placeholder="State" />
+      <input type="text" id="addrPincode" placeholder="Pincode" />
+
+      <!-- Payment Options -->
+      <div class="payment-options">
+        <h3>Payment Method</h3>
+        <div class="payment-opt selected" id="optCOD" onclick="selectPayment('cod')">
+          <input type="radio" name="payment" checked /> Cash on Delivery (COD)
+        </div>
+        <div class="payment-opt" id="optOnline" onclick="selectPayment('online')">
+          <input type="radio" name="payment" /> Online Payment (UPI/Card)
+        </div>
+      </div>
+
+      <button class="btn-place-order" onclick="placeOrder()">Place Order</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+  let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+  let selectedPayment = 'cod';
+  const DELIVERY_CHARGE = 0;
+
+  renderCart();
+
+  function renderCart() {
+    const container = document.getElementById('cartItems');
+    if (cart.length === 0) {
+      container.innerHTML = '<div class="empty-cart"><p style="font-size:3rem;">🛒</p><p>Your cart is empty!</p><a href="/" style="color:#2874f0;">Continue Shopping</a></div>';
+      updateSummary();
+      return;
+    }
+
+    container.innerHTML = cart.map((item, i) => `
+      <div class="cart-item">
+        <img src="${item.image}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/80'" />
+        <div class="details">
+          <p class="name">${item.name}</p>
+          <p class="price">₹${item.price}</p>
+          <div class="qty-controls">
+            <button class="qty-btn" onclick="changeQty(${i}, -1)">−</button>
+            <span class="qty-num">${item.quantity}</span>
+            <button class="qty-btn" onclick="changeQty(${i}, 1)">+</button>
+          </div>
+        </div>
+        <button class="btn-remove" onclick="removeItem(${i})">Remove</button>
+      </div>
+    `).join('');
+
+    updateSummary();
+  }
+
+  function changeQty(index, change) {
+    cart[index].quantity += change;
+    if (cart[index].quantity <= 0) cart.splice(index, 1);
+    localStorage.setItem('cart', JSON.stringify(cart));
+    renderCart();
+  }
+
+  function removeItem(index) {
+    cart.splice(index, 1);
+    localStorage.setItem('cart', JSON.stringify(cart));
+    renderCart();
+  }
+
+  function updateSummary() {
+    const total = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+    const count = cart.reduce((sum, i) => sum + i.quantity, 0);
+    document.getElementById('itemCount').textContent = count;
+    document.getElementById('totalPrice').textContent = '₹' + total;
+    document.getElementById('totalAmount').textContent = '₹' + (total + DELIVERY_CHARGE);
+  }
+
+  function showCheckout() {
+    if (cart.length === 0) { alert('Cart is empty!'); return; }
+    const token = localStorage.getItem('token');
+    if (!token) { window.location.href = '/login.html'; return; }
+
+    // Load saved address
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const savedAddress = JSON.parse(localStorage.getItem('savedAddress') || '{}');
+    if (savedAddress.name) {
+      document.getElementById('addrName').value = savedAddress.name || '';
+      document.getElementById('addrPhone').value = savedAddress.phone || '';
+      document.getElementById('addrStreet').value = savedAddress.street || '';
+      document.getElementById('addrCity').value = savedAddress.city || '';
+      document.getElementById('addrState').value = savedAddress.state || '';
+      document.getElementById('addrPincode').value = savedAddress.pincode || '';
+    } else if (user.name) {
+      document.getElementById('addrName').value = user.name;
+    }
+
+    document.getElementById('addressForm').style.display = 'block';
+    document.getElementById('addressForm').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function selectPayment(method) {
+    selectedPayment = method;
+    document.getElementById('optCOD').classList.toggle('selected', method === 'cod');
+    document.getElementById('optOnline').classList.toggle('selected', method === 'online');
+  }
+
+  async function placeOrder() {
+    const address = {
+      name: document.getElementById('addrName').value,
+      phone: document.getElementById('addrPhone').value,
+      street: document.getElementById('addrStreet').value,
+      city: document.getElementById('addrCity').value,
+      state: document.getElementById('addrState').value,
+      pincode: document.getElementById('addrPincode').value
+    };
+
+    if (!address.name || !address.phone || !address.street || !address.city || !address.pincode) {
+      alert('Please fill all address fields!'); return;
+    }
+
+    // Save address for next time
+    localStorage.setItem('savedAddress', JSON.stringify(address));
+
+    const total = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+    const token = localStorage.getItem('token');
+
+    if (selectedPayment === 'online') {
+      await onlinePayment(address, total, token);
+    } else {
+      await codOrder(address, total, token);
+    }
+  }
+
+  async function codOrder(address, total, token) {
+    try {
+      const res = await fetch('/orders/place', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({
+          items: cart,
+          totalAmount: total,
+          address,
+          paymentMethod: 'cod',
+          deliveryCharge: DELIVERY_CHARGE
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.removeItem('cart');
+        alert('Order placed successfully! Order ID: ' + data.order._id);
+        window.location.href = '/orders.html';
+      } else {
+        alert(data.message);
+      }
+    } catch (err) {
+      alert('Something went wrong!');
+    }
+  }
+
+  async function onlinePayment(address, total, token) {
+    try {
+      const res = await fetch('/payment/create-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ amount: total })
+      });
+      const data = await res.json();
+
+      const options = {
+        key: data.key || '',
+        amount: data.amount,
+        currency: 'INR',
+        name: 'SDK Fashions',
+        description: 'Fashion Order',
+        order_id: data.orderId,
+        handler: async (response) => {
+          // Place order first
+          const orderRes = await fetch('/orders/place', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({
+              items: cart,
+              totalAmount: total,
+              address,
+              paymentMethod: 'online',
+              deliveryCharge: DELIVERY_CHARGE
+            })
+          });
+          const orderData = await orderRes.json();
+
+          // Verify payment
+          await fetch('/payment/verify', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+              orderId: orderData.order._id
+            })
+          });
+
+          localStorage.removeItem('cart');
+          alert('Payment successful! Order placed!');
+          window.location.href = '/orders.html';
+        },
+        prefill: {
+          name: address.name,
+          contact: address.phone
+        },
+        theme: { color: '#2874f0' }
+      };
+
+      const rzp = new Razorpay(options);
+      rzp.open();
+    } catch (err) {
+      alert('Payment failed! Try COD.');
+    }
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SDK Fashions - My Orders</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #f5f5f5; }
+    .navbar { background: #2874f0; padding: 1rem 2rem; }
+    .navbar a { color: white; text-decoration: none; font-size: 1.1rem; font-weight: bold; }
+    .container { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+    h2 { margin-bottom: 1rem; color: #333; }
+    .order-card { background: white; border-radius: 4px; margin-bottom: 1rem; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+    .order-header { padding: 1rem; background: #f5f5f5; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .order-id { font-size: 13px; color: #666; }
+    .order-date { font-size: 13px; color: #666; }
+    .status { padding: 4px 12px; border-radius: 10px; font-size: 12px; font-weight: bold; }
+    .status.pending { background: #fff3cd; color: #856404; }
+    .status.confirmed { background: #d4edda; color: #155724; }
+    .status.packed { background: #cce5ff; color: #004085; }
+    .status.shipped { background: #d1ecf1; color: #0c5460; }
+    .status.delivered { background: #d4edda; color: #155724; }
+    .status.cancelled { background: #f8d7da; color: #721c24; }
+    .order-items { padding: 1rem; }
+    .order-item { display: flex; gap: 1rem; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+    .order-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; }
+    .order-item .info { flex: 1; }
+    .order-item .name { font-size: 14px; }
+    .order-item .qty-price { font-size: 13px; color: #666; }
+    .order-footer { padding: 1rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f0f0f0; }
+    .total { font-weight: bold; font-size: 15px; }
+    .btn-cancel { padding: 8px 16px; background: white; color: #e94560; border: 1px solid #e94560; border-radius: 4px; cursor: pointer; font-size: 13px; }
+    .btn-cancel:hover { background: #e94560; color: white; }
+    .btn-bill { padding: 8px 16px; background: #2874f0; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; }
+    .no-orders { text-align: center; padding: 3rem; color: #666; }
+    .address-info { font-size: 13px; color: #666; padding: 0 1rem 1rem; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/">← SDK Fashions</a>
+</nav>
+
+<div class="container">
+  <h2>My Orders</h2>
+  <div id="ordersContainer"><p>Loading orders...</p></div>
+</div>
+
+<script>
+  const token = localStorage.getItem('token');
+  if (!token) window.location.href = '/login.html';
+
+  loadOrders();
+
+  async function loadOrders() {
+    try {
+      const res = await fetch('/orders/my-orders', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const orders = await res.json();
+      const container = document.getElementById('ordersContainer');
+
+      if (orders.length === 0) {
+        container.innerHTML = '<div class="no-orders"><p style="font-size:3rem;">📦</p><p>No orders yet!</p><a href="/" style="color:#2874f0;">Start Shopping</a></div>';
+        return;
+      }
+
+      container.innerHTML = orders.map(order => `
+        <div class="order-card">
+          <div class="order-header">
+            <div>
+              <p class="order-id">Order ID: ${order._id}</p>
+              <p class="order-date">${new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span class="status ${order.orderStatus}">${order.orderStatus.toUpperCase()}</span>
+              <span style="font-size:12px;color:#666;">${order.paymentMethod.toUpperCase()}</span>
+            </div>
+          </div>
+
+          <div class="order-items">
+            ${order.items.map(item => `
+              <div class="order-item">
+                <img src="${item.image}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/60'" />
+                <div class="info">
+                  <p class="name">${item.name}</p>
+                  <p class="qty-price">Qty: ${item.quantity} × ₹${item.price} = ₹${item.quantity * item.price}</p>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="address-info">
+            📍 ${order.address.street}, ${order.address.city}, ${order.address.state} - ${order.address.pincode}
+          </div>
+
+          <div class="order-footer">
+            <p class="total">Total: ₹${order.totalAmount}</p>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-bill" onclick="generateBill('${order._id}')">Download Bill</button>
+              ${!['delivered','cancelled','shipped'].includes(order.orderStatus) ?
+                `<button class="btn-cancel" onclick="cancelOrder('${order._id}')">Cancel Order</button>` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    } catch (err) {
+      document.getElementById('ordersContainer').innerHTML = '<p>Failed to load orders!</p>';
+    }
+  }
+
+  async function cancelOrder(id) {
+    if (!confirm('Cancel this order?')) return;
+    try {
+      const res = await fetch('/orders/cancel/' + id, {
+        method: 'PUT',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+      alert(data.message);
+      loadOrders();
+    } catch (err) {
+      alert('Something went wrong!');
+    }
+  }
+
+  function generateBill(orderId) {
+    window.open('/orders/bill/' + orderId + '?token=' + token, '_blank');
+  }
+</script>
+</body>
+</html>

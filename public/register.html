@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SDK Fashions - Register</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #f5f5f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+    .logo { text-align: center; margin-bottom: 1.5rem; }
+    .logo h1 { color: #2874f0; font-size: 1.8rem; }
+    input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+    input:focus { outline: none; border-color: #2874f0; }
+    .btn { width: 100%; padding: 12px; background: #fb641b; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; margin-top: 8px; }
+    .btn:hover { background: #e85d0f; }
+    .links { text-align: center; margin-top: 1rem; font-size: 14px; }
+    .links a { color: #2874f0; text-decoration: none; }
+    .error { color: red; font-size: 13px; text-align: center; margin-top: 8px; display: none; }
+    .success { color: green; font-size: 13px; text-align: center; margin-top: 8px; display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <h1>SDK Fashions</h1>
+      <p>Create your account</p>
+    </div>
+
+    <input type="text" id="name" placeholder="Full Name" />
+    <input type="email" id="email" placeholder="Email" />
+    <input type="password" id="password" placeholder="Password (min 6 chars)" />
+    <input type="password" id="confirmPassword" placeholder="Confirm Password" />
+    <button class="btn" onclick="register()">Create Account</button>
+
+    <p class="error" id="errorMsg"></p>
+    <p class="success" id="successMsg"></p>
+
+    <div class="links">
+      Already have an account? <a href="login.html">Login</a>
+    </div>
+  </div>
+
+  <script>
+    async function register() {
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+
+      if (!name || !email || !password || !confirmPassword) {
+        showError('Please fill all fields!');
+        return;
+      }
+
+      if (password.length < 6) {
+        showError('Password must be at least 6 characters!');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        showError('Passwords do not match!');
+        return;
+      }
+
+      try {
+        const res = await fetch('/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          showSuccess('Account created! Redirecting...');
+          setTimeout(() => window.location.href = '/index.html', 1000);
+        } else {
+          showError(data.message);
+        }
+      } catch (err) {
+        showError('Something went wrong!');
+      }
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('errorMsg');
+      el.textContent = msg;
+      el.style.display = 'block';
+      document.getElementById('successMsg').style.display = 'none';
+    }
+
+    function showSuccess(msg) {
+      const el = document.getElementById('successMsg');
+      el.textContent = msg;
+      el.style.display = 'block';
+      document.getElementById('errorMsg').style.display = 'none';
+    }
+  </script>
+</body>
+</html>

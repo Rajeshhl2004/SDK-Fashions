@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SDK Fashions - Admin Login</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #1a1a2e; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .container { background: white; padding: 2rem; border-radius: 8px; width: 100%; max-width: 400px; }
+    .logo { text-align: center; margin-bottom: 1.5rem; }
+    .logo h1 { color: #e94560; font-size: 1.8rem; }
+    .logo p { color: #666; font-size: 0.85rem; }
+    input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+    input:focus { outline: none; border-color: #e94560; }
+    .btn { width: 100%; padding: 12px; background: #e94560; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; margin-top: 8px; }
+    .btn:hover { background: #c73652; }
+    .links { text-align: center; margin-top: 1rem; font-size: 14px; }
+    .links a { color: #e94560; text-decoration: none; }
+    .error { color: red; font-size: 13px; text-align: center; margin-top: 8px; display: none; }
+    .success { color: green; font-size: 13px; text-align: center; margin-top: 8px; display: none; }
+    .badge { background: #e94560; color: white; font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-left: 8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <h1>SDK Fashions <span class="badge">ADMIN</span></h1>
+      <p>Admin Panel Login</p>
+    </div>
+
+    <input type="email" id="email" placeholder="Admin Email" />
+    <input type="password" id="password" placeholder="Admin Password" />
+    <button class="btn" onclick="adminLogin()">Login to Admin Panel</button>
+
+    <p class="error" id="errorMsg"></p>
+    <p class="success" id="successMsg"></p>
+
+    <div class="links">
+      <a href="admin-forgot-password.html">Forgot Password?</a>
+    </div>
+  </div>
+
+  <script>
+    async function adminLogin() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      if (!email || !password) { showError('Please fill all fields!'); return; }
+
+      try {
+        const res = await fetch('/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          localStorage.setItem('adminToken', data.token);
+          localStorage.setItem('adminInfo', JSON.stringify(data.admin));
+          showSuccess('Login successful! Redirecting...');
+          setTimeout(() => window.location.href = '/admin.html', 1000);
+        } else {
+          showError(data.message);
+        }
+      } catch (err) {
+        showError('Something went wrong!');
+      }
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('errorMsg');
+      el.textContent = msg; el.style.display = 'block';
+      document.getElementById('successMsg').style.display = 'none';
+    }
+    function showSuccess(msg) {
+      const el = document.getElementById('successMsg');
+      el.textContent = msg; el.style.display = 'block';
+      document.getElementById('errorMsg').style.display = 'none';
+    }
+  </script>
+</body>
+</html>

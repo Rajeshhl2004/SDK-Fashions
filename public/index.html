@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SDK Fashions</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #f5f5f5; }
+
+    /* Navbar */
+    .navbar { background: #2874f0; padding: 0 2rem; display: flex; align-items: center; height: 56px; gap: 1rem; position: sticky; top: 0; z-index: 100; }
+    .navbar .logo { color: white; font-size: 1.4rem; font-weight: bold; font-style: italic; white-space: nowrap; }
+    .navbar .logo span { font-size: 0.7rem; font-style: normal; display: block; }
+    .search-bar { flex: 1; display: flex; max-width: 600px; }
+    .search-bar input { flex: 1; padding: 10px 16px; border: none; border-radius: 2px 0 0 2px; font-size: 14px; outline: none; }
+    .search-bar button { padding: 10px 16px; background: #ff9f00; border: none; cursor: pointer; border-radius: 0 2px 2px 0; }
+    .search-bar button svg { width: 18px; height: 18px; fill: white; }
+    .nav-links { display: flex; gap: 1rem; margin-left: auto; align-items: center; }
+    .nav-links a { color: white; text-decoration: none; font-size: 14px; white-space: nowrap; }
+    .nav-links .btn-login { background: white; color: #2874f0; padding: 6px 16px; border-radius: 2px; font-weight: bold; }
+    .nav-links .btn-cart { position: relative; }
+    .cart-count { background: #ff6161; color: white; font-size: 10px; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: absolute; top: -8px; right: -8px; }
+    .user-name { color: white; font-size: 14px; }
+
+    /* Banner */
+    .banner { background: linear-gradient(135deg, #2874f0, #0050c8); color: white; padding: 2rem; text-align: center; }
+    .banner h2 { font-size: 2rem; margin-bottom: 0.5rem; }
+    .banner p { font-size: 1rem; opacity: 0.9; }
+
+    /* Categories */
+    .categories { background: white; padding: 1rem 2rem; display: flex; gap: 2rem; overflow-x: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .category-item { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; min-width: 70px; }
+    .category-icon { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; background: #f0f5ff; }
+    .category-item span { font-size: 12px; color: #333; white-space: nowrap; }
+    .category-item.active .category-icon { background: #2874f0; }
+    .category-item.active span { color: #2874f0; font-weight: bold; }
+
+    /* Products */
+    .section { padding: 1.5rem 2rem; }
+    .section h2 { font-size: 1.2rem; margin-bottom: 1rem; color: #333; }
+    .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+    .product-card { background: white; border-radius: 4px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s; }
+    .product-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .product-card img { width: 100%; height: 220px; object-fit: cover; }
+    .product-card .info { padding: 0.75rem; }
+    .product-card .name { font-size: 14px; color: #333; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .product-card .price { font-size: 16px; font-weight: bold; color: #333; }
+    .product-card .category-tag { font-size: 11px; background: #f0f5ff; color: #2874f0; padding: 2px 8px; border-radius: 10px; display: inline-block; margin-bottom: 4px; }
+    .product-card .rating { font-size: 12px; color: #666; }
+    .btn-cart-add { width: 100%; padding: 8px; background: #ff9f00; color: white; border: none; cursor: pointer; font-size: 13px; font-weight: bold; }
+    .btn-cart-add:hover { background: #e88f00; }
+
+    /* No products */
+    .no-products { text-align: center; padding: 3rem; color: #666; }
+
+    /* Footer */
+    footer { background: #172337; color: #ccc; padding: 2rem; text-align: center; margin-top: 2rem; font-size: 13px; }
+
+    /* Toast */
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 12px 20px; border-radius: 4px; font-size: 14px; display: none; z-index: 999; }
+
+    @media (max-width: 768px) {
+  .navbar { padding: 0 1rem; height: auto; flex-wrap: wrap; gap: 8px; padding: 8px; }
+  .search-bar { order: 3; width: 100%; max-width: 100%; }
+  .nav-links { gap: 8px; }
+  .nav-links a { font-size: 12px; }
+  .logo { font-size: 1.1rem; }
+  .categories { gap: 1rem; padding: 0.75rem 1rem; }
+  .category-icon { width: 44px; height: 44px; font-size: 20px; }
+  .products-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .section { padding: 1rem; }
+  .banner { padding: 1rem; }
+  .banner h2 { font-size: 1.3rem; }
+}
+
+@media (max-width: 480px) {
+  .products-grid { grid-template-columns: repeat(2, 1fr); }
+  .product-card img { height: 160px; }
+}
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <div class="logo">SDK Fashions <span>Fashion at your door</span></div>
+
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Search for clothes, brands and more" oninput="searchProducts()" />
+    <button>
+      <svg viewBox="0 0 24 24"><path d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  <div class="nav-links">
+    <span class="user-name" id="userName"></span>
+    <a href="login.html" class="btn-login" id="loginBtn">Login</a>
+    <a href="#" class="btn-cart" onclick="goToCart()">
+      🛒 Cart
+      <span class="cart-count" id="cartCount">0</span>
+    </a>
+    <a href="admin-login.html" style="font-size:12px;opacity:0.8;">Admin</a>
+    <a href="profile.html" id="addressBtn" style="display:none;">📍 Address</a>
+  </div>
+</nav>
+
+<!-- Banner -->
+<div class="banner">
+  <h2>SDK Fashions</h2>
+  <p>Best Clothing at Best Prices — Shivamogga's #1 Fashion Store</p>
+</div>
+
+<!-- Categories -->
+<div class="categories">
+  <div class="category-item active" onclick="filterCategory('all')">
+    <div class="category-icon">👕</div>
+    <span>All</span>
+  </div>
+  <div class="category-item" onclick="filterCategory('shirt')">
+    <div class="category-icon">👔</div>
+    <span>Shirts</span>
+  </div>
+  <div class="category-item" onclick="filterCategory('pant')">
+    <div class="category-icon">👖</div>
+    <span>Pants</span>
+  </div>
+  <div class="category-item" onclick="filterCategory('saree')">
+    <div class="category-icon">🥻</div>
+    <span>Sarees</span>
+  </div>
+  <div class="category-item" onclick="filterCategory('kurta')">
+    <div class="category-icon">👗</div>
+    <span>Kurtas</span>
+  </div>
+  <div class="category-item" onclick="filterCategory('jacket')">
+    <div class="category-icon">🧥</div>
+    <span>Jackets</span>
+  </div>
+  <div class="category-item" onclick="filterCategory('other')">
+    <div class="category-icon">🛍️</div>
+    <span>Other</span>
+  </div>
+</div>
+
+<!-- Products Section -->
+<div class="section">
+  <h2 id="sectionTitle">All Products</h2>
+  <div class="products-grid" id="productsGrid">
+    <p>Loading products...</p>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer>
+  <p>SDK Fashions — Shivamogga | Contact: +91 XXXXXXXXXX</p>
+  <p style="margin-top:8px;">© 2024 SDK Fashions. All rights reserved.</p>
+</footer>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  let allProducts = [];
+  let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+
+  // Check login
+  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  if (user) {
+    document.getElementById('userName').textContent = 'Hi, ' + user.name.split(' ')[0];
+    document.getElementById('loginBtn').textContent = 'Logout';
+    document.getElementById('loginBtn').href = '#';
+    document.getElementById('loginBtn').onclick = logout;
+    document.getElementById('addressBtn').style.display = 'block';
+  }
+
+  updateCartCount();
+  loadProducts();
+
+  async function loadProducts() {
+    try {
+      const res = await fetch('/products');
+      allProducts = await res.json();
+      displayProducts(allProducts);
+    } catch (err) {
+      document.getElementById('productsGrid').innerHTML = '<p class="no-products">Failed to load products!</p>';
+    }
+  }
+
+  function displayProducts(products) {
+    const grid = document.getElementById('productsGrid');
+    if (products.length === 0) {
+      grid.innerHTML = '<div class="no-products"><p style="font-size:3rem;">🛍️</p><p>No products found!</p></div>';
+      return;
+    }
+    grid.innerHTML = products.map(p => `
+      <div class="product-card">
+        <img src="${p.image}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/220x220?text=No+Image'" />
+        <div class="info">
+          <span class="category-tag">${p.category}</span>
+          <p class="name">${p.name}</p>
+          <p class="price">₹${p.price}</p>
+          <p class="rating">⭐ ${p.ratings || 0} (${p.numReviews || 0} reviews)</p>
+        </div>
+        <button class="btn-cart-add" onclick="addToCart('${p._id}', '${p.name}', ${p.price}, '${p.image}')">
+          Add to Cart
+        </button>
+      </div>
+    `).join('');
+  }
+
+  function filterCategory(category) {
+    document.querySelectorAll('.category-item').forEach(el => el.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+
+    if (category === 'all') {
+      document.getElementById('sectionTitle').textContent = 'All Products';
+      displayProducts(allProducts);
+    } else {
+      document.getElementById('sectionTitle').textContent = category.charAt(0).toUpperCase() + category.slice(1) + 's';
+      displayProducts(allProducts.filter(p => p.category === category));
+    }
+  }
+
+  function searchProducts() {
+    const query = document.getElementById('searchInput').value.toLowerCase();
+    if (!query) { displayProducts(allProducts); return; }
+    displayProducts(allProducts.filter(p =>
+      p.name.toLowerCase().includes(query) ||
+      p.category.toLowerCase().includes(query)
+    ));
+  }
+
+  function addToCart(id, name, price, image) {
+    const existing = cart.find(item => item.id === id);
+    if (existing) {
+      existing.quantity += 1;
+    } else {
+      cart.push({ id, name, price, image, quantity: 1 });
+    }
+    localStorage.setItem('cart', JSON.stringify(cart));
+    updateCartCount();
+    showToast(name + ' added to cart!');
+  }
+
+  function updateCartCount() {
+    const total = cart.reduce((sum, item) => sum + item.quantity, 0);
+    document.getElementById('cartCount').textContent = total;
+  }
+
+  function goToCart() {
+    window.location.href = '/cart.html';
+  }
+
+  function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.reload();
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.style.display = 'block';
+    setTimeout(() => toast.style.display = 'none', 2500);
+  }
+</script>
+</body>
+</html>

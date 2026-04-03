@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SDK Fashions - Admin Panel</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #f5f5f5; }
+    .navbar { background: #1a1a2e; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+    .navbar h1 { font-size: 1.2rem; color: #e94560; }
+    .navbar button { background: #e94560; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+    .tabs { display: flex; gap: 0; background: white; border-bottom: 2px solid #f0f0f0; padding: 0 2rem; }
+    .tab { padding: 1rem 2rem; cursor: pointer; font-size: 15px; color: #666; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+    .tab.active { color: #e94560; border-bottom: 3px solid #e94560; font-weight: bold; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .container { max-width: 1200px; margin: 1.5rem auto; padding: 0 1rem; }
+    .card { background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .card h2 { margin-bottom: 1rem; color: #333; font-size: 1.1rem; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+    textarea { height: 80px; resize: vertical; }
+    .full-width { grid-column: 1 / -1; }
+    .btn-add { background: #e94560; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-size: 15px; margin-top: 1rem; }
+    .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+    .product-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .product-card img { width: 100%; height: 180px; object-fit: cover; }
+    .product-info { padding: 0.75rem; }
+    .product-info h3 { font-size: 14px; margin-bottom: 4px; }
+    .product-info .price { color: #e94560; font-weight: bold; }
+    .product-info .cat { background: #f0f0f0; padding: 2px 8px; border-radius: 10px; font-size: 11px; display: inline-block; margin: 4px 0; }
+    .product-actions { display: flex; gap: 6px; margin-top: 8px; }
+    .btn-edit { flex: 1; padding: 7px; background: #2874f0; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .btn-delete { flex: 1; padding: 7px; background: #e94560; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .success-msg { background: #d4edda; color: #155724; padding: 10px; border-radius: 4px; margin-bottom: 1rem; display: none; }
+    .error-msg { background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; margin-bottom: 1rem; display: none; }
+    .order-row { background: white; border: 1px solid #f0f0f0; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+    .order-top { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+    .order-info { font-size: 13px; color: #666; margin-bottom: 2px; }
+    .order-items-list { font-size: 13px; margin: 8px 0; background: #f9f9f9; padding: 8px; border-radius: 4px; }
+    .status-select { padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+    .btn-update { padding: 7px 12px; background: #2874f0; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .btn-delivery { padding: 7px 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .btn-bill-admin { padding: 7px 12px; background: #ff9f00; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .btn-pickup { padding: 7px 12px; background: #6f42c1; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .status-badge { padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: bold; }
+    .badge-pending { background: #fff3cd; color: #856404; }
+    .badge-confirmed { background: #d4edda; color: #155724; }
+    .badge-packed { background: #cce5ff; color: #004085; }
+    .badge-shipped { background: #d1ecf1; color: #0c5460; }
+    .badge-delivered { background: #d4edda; color: #155724; }
+    .badge-cancelled { background: #f8d7da; color: #721c24; }
+    .pickup-info { background: #f0f5ff; border: 1px solid #2874f0; border-radius: 4px; padding: 8px 12px; margin-top: 8px; font-size: 13px; display: none; }
+    .actions-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 10px; }
+    .empty { text-align: center; padding: 3rem; color: #666; }
+  </style>
+</head>
+<body>
+
+<div class="navbar">
+  <h1>SDK Fashions — Admin Panel</h1>
+  <a href="/" style="color:white;text-decoration:none;margin-right:1rem;font-size:14px;">🏠 Home</a>
+  <button onclick="logout()">Logout</button>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('products')">Products</div>
+  <div class="tab" onclick="switchTab('orders')">Orders</div>
+</div>
+
+<!-- Products Tab -->
+<div id="tab-products" class="tab-content active">
+  <div class="container">
+
+    <!-- Add Product -->
+    <div class="card">
+      <h2 id="formTitle">Add New Product</h2>
+      <div id="successMsg" class="success-msg"></div>
+      <div id="errorMsg" class="error-msg"></div>
+      <div class="form-grid">
+        <input type="text" id="productName" placeholder="Product Name *" />
+        <input type="number" id="productPrice" placeholder="Price (₹) *" />
+        <select id="productCategory">
+          <option value="">Select Category *</option>
+          <option value="shirt">Shirt</option>
+          <option value="pant">Pant</option>
+          <option value="saree">Saree</option>
+          <option value="kurta">Kurta</option>
+          <option value="jacket">Jacket</option>
+          <option value="other">Other</option>
+        </select>
+        <input type="number" id="productStock" placeholder="Stock Quantity" />
+        <div class="full-width">
+  <p style="font-size:13px;color:#666;margin-bottom:6px;">Sizes (select multiple):</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <label><input type="checkbox" class="size-cb" value="XS"> XS</label>
+    <label><input type="checkbox" class="size-cb" value="S"> S</label>
+    <label><input type="checkbox" class="size-cb" value="M"> M</label>
+    <label><input type="checkbox" class="size-cb" value="L"> L</label>
+    <label><input type="checkbox" class="size-cb" value="XL"> XL</label>
+    <label><input type="checkbox" class="size-cb" value="XXL"> XXL</label>
+    <label><input type="checkbox" class="size-cb" value="Free Size"> Free Size</label>
+  </div>
+</div>
+        <textarea class="full-width" id="productDescription" placeholder="Product Description (optional)"></textarea>
+        <div class="full-width">
+          <p style="font-size:13px;color:#666;margin-bottom:6px;">Image — File upload ಅಥವಾ URL ಕೊಡು:</p>
+          <input type="file" id="productImage" accept="image/*" style="margin-bottom:8px;" />
+          <input type="text" id="productImageUrl" placeholder="ಅಥವಾ Image URL paste ಮಾಡು (optional)" />
+        </div>
+      </div>
+      <button class="btn-add" id="submitBtn" onclick="addProduct()">Add Product</button>
+      <button class="btn-add" id="cancelBtn" onclick="cancelEdit()" style="background:#666;display:none;margin-left:8px;">Cancel</button>
+    </div>
+
+    <!-- Products List -->
+    <div class="card">
+      <h2>All Products</h2>
+      <div class="products-grid" id="productsGrid">
+        <p>Loading products...</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Orders Tab -->
+<div id="tab-orders" class="tab-content">
+  <div class="container">
+    <div class="card">
+      <h2>All Orders</h2>
+      <div id="ordersContainer"><p>Loading orders...</p></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const token = localStorage.getItem('adminToken');
+  if (!token) window.location.href = '/admin-login.html';
+
+  let editingId = null;
+
+  // Tab switch
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+    if (tab === 'orders') loadOrders();
+    if (tab === 'products') loadProducts();
+  }
+
+  // Load on start
+  loadProducts();
+
+  // ==================== PRODUCTS ====================
+
+  async function addProduct() {
+    const name = document.getElementById('productName').value;
+    const price = document.getElementById('productPrice').value;
+    const category = document.getElementById('productCategory').value;
+    const stock = document.getElementById('productStock').value;
+    const description = document.getElementById('productDescription').value;
+    const imageFile = document.getElementById('productImage').files[0];
+    const imageUrl = document.getElementById('productImageUrl').value;
+
+    // Edit ಮಾಡುವಾಗ image optional
+if (!name || !price || !category) {
+  showError('Please fill Name, Price and Category!'); return;
+}
+if (!editingId && !imageFile && !imageUrl) {
+  showError('Please provide image file or URL!'); return;
+}
+
+    const formData = new FormData();
+    const sizes = [...document.querySelectorAll('.size-cb:checked')].map(cb => cb.value);
+formData.append('sizes', JSON.stringify(sizes));
+    formData.append('name', name);
+    formData.append('price', price);
+    formData.append('category', category);
+    formData.append('stock', stock || 10);
+    formData.append('description', description);
+    if (imageFile) formData.append('image', imageFile);
+    if (imageUrl) formData.append('imageUrl', imageUrl);
+
+    try {
+      const url = editingId ? '/admin/product/edit/' + editingId : '/admin/product/add';
+      const method = editingId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Authorization': 'Bearer ' + token },
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showSuccess(editingId ? 'Product updated!' : 'Product added!');
+        clearForm();
+        loadProducts();
+      } else {
+        showError(data.message);
+      }
+    } catch (err) {
+      showError('Something went wrong!');
+    }
+  }
+
+  async function loadProducts() {
+    try {
+      const res = await fetch('/admin/products', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const products = await res.json();
+      const grid = document.getElementById('productsGrid');
+
+      if (!products.length) {
+        grid.innerHTML = '<div class="empty"><p style="font-size:2rem;">👕</p><p>No products yet!</p></div>';
+        return;
+      }
+
+      grid.innerHTML = products.map(p => `
+        <div class="product-card">
+          <img src="${p.image}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/220x180?text=No+Image'" />
+          <div class="product-info">
+            <span class="cat">${p.category}</span>
+            <h3>${p.name}</h3>
+            <p class="price">₹${p.price}</p>
+            <p style="font-size:12px;color:#666;">Stock: ${p.stock}</p>
+            <div class="product-actions">
+              <button class="btn-edit" onclick="editProduct('${p._id}','${p.name}',${p.price},'${p.category}',${p.stock},'${p.description || ''}')">✏️ Edit</button>
+              <button class="btn-delete" onclick="deleteProduct('${p._id}')">🗑️ Delete</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    } catch (err) {
+      document.getElementById('productsGrid').innerHTML = '<p>Error loading products!</p>';
+    }
+  }
+
+  function editProduct(id, name, price, category, stock, description) {
+    editingId = id;
+    document.getElementById('productName').value = name;
+    document.getElementById('productPrice').value = price;
+    document.getElementById('productCategory').value = category;
+    document.getElementById('productStock').value = stock;
+    document.getElementById('productDescription').value = description;
+    document.getElementById('formTitle').textContent = 'Edit Product';
+    document.getElementById('submitBtn').textContent = 'Update Product';
+    document.getElementById('cancelBtn').style.display = 'inline-block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function cancelEdit() {
+    editingId = null;
+    clearForm();
+    document.getElementById('formTitle').textContent = 'Add New Product';
+    document.getElementById('submitBtn').textContent = 'Add Product';
+    document.getElementById('cancelBtn').style.display = 'none';
+  }
+
+  async function deleteProduct(id) {
+    if (!confirm('Delete this product?')) return;
+    try {
+      const res = await fetch('/admin/product/delete/' + id, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+      if (res.ok) { showSuccess('Product deleted!'); loadProducts(); }
+      else showError(data.message);
+    } catch { showError('Something went wrong!'); }
+  }
+
+  function clearForm() {
+    document.getElementById('productName').value = '';
+    document.getElementById('productPrice').value = '';
+    document.getElementById('productCategory').value = '';
+    document.getElementById('productStock').value = '';
+    document.getElementById('productDescription').value = '';
+    document.getElementById('productImage').value = '';
+    document.getElementById('productImageUrl').value = '';
+  }
+
+  // ==================== ORDERS ====================
+
+  async function loadOrders() {
+    try {
+      const res = await fetch('/orders/admin/all', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const orders = await res.json();
+      const container = document.getElementById('ordersContainer');
+
+      if (!orders.length) {
+        container.innerHTML = '<div class="empty"><p style="font-size:2rem;">📦</p><p>No orders yet!</p></div>';
+        return;
+      }
+
+      container.innerHTML = orders.map(order => `
+        <div class="order-row">
+          <div class="order-top">
+            <div>
+              <p style="font-size:15px;font-weight:bold;">Order #${order._id.toString().slice(-6).toUpperCase()}</p>
+              <p class="order-info">👤 ${order.address?.name} | 📞 ${order.address?.phone}</p>
+              <p class="order-info">📍 ${order.address?.street}, ${order.address?.city}, ${order.address?.state} - ${order.address?.pincode}</p>
+              <p class="order-info">🕐 ${new Date(order.createdAt).toLocaleString('en-IN')}</p>
+            </div>
+            <div style="text-align:right;">
+              <span class="status-badge badge-${order.orderStatus}">${order.orderStatus.toUpperCase()}</span>
+              <p style="font-weight:bold;font-size:16px;margin-top:6px;">₹${order.totalAmount}</p>
+              <p class="order-info">${order.paymentMethod.toUpperCase()} | ${order.paymentStatus.toUpperCase()}</p>
+            </div>
+          </div>
+
+          <div class="order-items-list">
+            ${order.items.map(i => `• ${i.name} × ${i.quantity} = ₹${i.price * i.quantity}`).join('<br/>')}
+          </div>
+
+          <div class="actions-row">
+            <select class="status-select" id="status-${order._id}">
+              <option value="pending" ${order.orderStatus==='pending'?'selected':''}>Pending</option>
+              <option value="confirmed" ${order.orderStatus==='confirmed'?'selected':''}>Confirmed</option>
+              <option value="packed" ${order.orderStatus==='packed'?'selected':''}>Packed</option>
+              <option value="shipped" ${order.orderStatus==='shipped'?'selected':''}>Shipped</option>
+              <option value="delivered" ${order.orderStatus==='delivered'?'selected':''}>Delivered</option>
+              <option value="cancelled" ${order.orderStatus==='cancelled'?'selected':''}>Cancelled</option>
+            </select>
+            <button class="btn-update" onclick="updateStatus('${order._id}')">✅ Update</button>
+            <button class="btn-pickup" onclick="placePickup('${order._id}', '${order.address?.name}', '${order.address?.phone}', '${order.address?.street}, ${order.address?.city} - ${order.address?.pincode}', ${order.totalAmount}, '${order.paymentMethod}')">🚚 Place Pickup</button>
+            <button class="btn-delivery" onclick="sendToDelivery('${order._id}', '${order.address?.name}', '${order.address?.phone}', '${order.address?.street}, ${order.address?.city} - ${order.address?.pincode}', ${order.totalAmount}, '${order.paymentMethod}')">📱 WhatsApp</button>
+            <button class="btn-bill-admin" onclick="window.open('/orders/bill/${order._id}?token=${token}','_blank')">🧾 Bill</button>
+          </div>
+
+          <div class="pickup-info" id="pickup-${order._id}"></div>
+        </div>
+      `).join('');
+    } catch (err) {
+      document.getElementById('ordersContainer').innerHTML = '<p>Error loading orders! Check console.</p>';
+      console.error(err);
+    }
+  }
+
+  async function updateStatus(orderId) {
+    const status = document.getElementById('status-' + orderId).value;
+    try {
+      const res = await fetch('/orders/admin/status/' + orderId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ status })
+      });
+      const data = await res.json();
+      if (res.ok) { showSuccess('Status updated to: ' + status.toUpperCase()); loadOrders(); }
+      else showError(data.message);
+    } catch { showError('Something went wrong!'); }
+  }
+
+  async function placePickup(orderId, name, phone, address, amount, paymentMethod) {
+    if (!confirm('Place pickup request to Shiprocket?')) return;
+
+    try {
+      const res = await fetch('/orders/admin/shiprocket/' + orderId, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+
+      const pickupDiv = document.getElementById('pickup-' + orderId);
+      pickupDiv.style.display = 'block';
+
+      if (res.ok) {
+        // Estimated pickup time — 24-48 hours
+        const now = new Date();
+        const pickup1 = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        const pickup2 = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+        const fmt = (d) => d.toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+        pickupDiv.innerHTML = `
+          ✅ <strong>Pickup Placed!</strong><br/>
+          📦 Shiprocket Order ID: ${data.tracking || 'Processing'}<br/>
+          🕐 Estimated Pickup: <strong>${fmt(pickup1)} – ${fmt(pickup2)}</strong><br/>
+          📍 From: Your Shivamogga store
+        `;
+        showSuccess('Pickup placed successfully!');
+        loadOrders();
+      } else {
+        pickupDiv.innerHTML = `❌ Shiprocket failed — use WhatsApp instead`;
+        showError(data.message);
+      }
+    } catch (err) {
+      showError('Something went wrong!');
+    }
+  }
+
+  function sendToDelivery(orderId, name, phone, address, amount, paymentMethod) {
+    const message = `🚚 *SDK Fashions - Delivery*\n\n` +
+      `📦 Order: #${orderId.slice(-6).toUpperCase()}\n` +
+      `👤 Customer: ${name}\n` +
+      `📞 Phone: ${phone}\n` +
+      `📍 Address: ${address}\n` +
+      `💰 Amount: ₹${amount}\n` +
+      `💳 Payment: ${paymentMethod.toUpperCase()}\n\n` +
+      `Please deliver and collect ${paymentMethod === 'cod' ? '₹' + amount + ' cash' : 'No cash — already paid'}.`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+  }
+
+  function showSuccess(msg) {
+    const el = document.getElementById('successMsg');
+    if (el) { el.textContent = msg; el.style.display = 'block'; setTimeout(() => el.style.display = 'none', 3000); }
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('errorMsg');
+    if (el) { el.textContent = msg; el.style.display = 'block'; }
+  }
+
+  function logout() {
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminInfo');
+    window.location.href = '/admin-login.html';
+  }
+</script>
+</body>
+</html>
+<!-- ```
+
+---
+
+**Ctrl+S → Save → Browser ಲ್ಲಿ refresh ಮಾಡು:**
+```
+http://localhost:5000/admin.html -->
