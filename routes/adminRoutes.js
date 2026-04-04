@@ -181,19 +181,23 @@ router.put('/product/edit/:id', adminAuth, upload.single('image'), async (req, r
     if (!product) return res.status(404).json({ message: 'Product not found!' });
 
     if (req.file) {
-      // Old image delete
-      if (product.imagePublicId) {
-        await cloudinary.uploader.destroy(product.imagePublicId);
+      // Old image ಇದ್ದಾಗ ಮಾತ್ರ delete ಮಾಡು
+      if (product.imagePublicId && product.imagePublicId !== '') {
+        try {
+          await cloudinary.uploader.destroy(product.imagePublicId);
+        } catch (err) {
+          console.log('Cloudinary skip:', err.message);
+        }
       }
       const result = await cloudinary.uploader.upload(req.file.path, { folder: 'sdk-fashions' });
       fs.unlinkSync(req.file.path);
       product.image = result.secure_url;
       product.imagePublicId = result.public_id;
-    } else if (imageUrl) {
+    } else if (imageUrl && imageUrl !== '') {
       product.image = imageUrl;
       product.imagePublicId = '';
     }
-    // Image ಇಲ್ಲದಿದ್ರೆ existing image ಇರಲಿ
+    // Image ಇಲ್ಲದಿದ್ರೆ existing image ಇರಲಿ ✅
 
     product.name = name || product.name;
     product.price = price || product.price;
@@ -212,7 +216,15 @@ router.delete('/product/delete/:id', adminAuth, async (req, res) => {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: 'Product not found!' });
 
-    await cloudinary.uploader.destroy(product.imagePublicId);
+    // imagePublicId ಇದ್ದಾಗ ಮಾತ್ರ Cloudinary delete ಮಾಡು
+    if (product.imagePublicId && product.imagePublicId !== '') {
+      try {
+        await cloudinary.uploader.destroy(product.imagePublicId);
+      } catch (err) {
+        console.log('Cloudinary delete skip:', err.message);
+      }
+    }
+
     await Product.findByIdAndDelete(req.params.id);
     res.json({ message: 'Product deleted!' });
   } catch (err) {
