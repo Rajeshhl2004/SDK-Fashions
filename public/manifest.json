@@ -1,14 +1,20 @@
 {
   "name": "SDK Fashions",
   "short_name": "SDK",
+  "description": "Shivamogga's #1 Fashion Store",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2874f0",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "https://via.placeholder.com/192x192/2874f0/ffffff?text=SDK",
       "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://via.placeholder.com/512x512/2874f0/ffffff?text=SDK",
+      "sizes": "512x512",
       "type": "image/png"
     }
   ]

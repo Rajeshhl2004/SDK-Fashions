@@ -18,10 +18,7 @@ cloudinary.config({
 });
 
 // Multer setup
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/'),
-  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
-});
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // Admin auth middleware
@@ -130,41 +127,36 @@ router.post('/reset-password', async (req, res) => {
 // Add Product
 
 router.post('/product/add', adminAuth, upload.single('image'), async (req, res) => {
-  const sizes = JSON.parse(req.body.sizes || '[]');
-// product create ಲ್ಲಿ add ಮಾಡು:
-const product = new Product({ name, price, description, category, stock, image, imagePublicId, sizes });
   try {
     const { name, price, description, category, stock, imageUrl } = req.body;
+    const sizes = JSON.parse(req.body.sizes || '[]');
 
     let image = '';
     let imagePublicId = '';
-    
 
-    // Image file upload ಮಾಡಿದ್ರೆ Cloudinary ಗೆ ಹೋಗ್ತದೆ
     if (req.file) {
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: 'sdk-fashions'
+      // Buffer ಇಂದ directly Cloudinary ಗೆ upload
+      const result = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+          { folder: 'sdk-fashions' },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        ).end(req.file.buffer);
       });
-      fs.unlinkSync(req.file.path);
       image = result.secure_url;
       imagePublicId = result.public_id;
-    }
-    // URL ಕೊಟ್ಟಿದ್ರೆ ಅದನ್ನ use ಮಾಡ್ತದೆ
-    else if (imageUrl) {
+    } else if (imageUrl) {
       image = imageUrl;
-      imagePublicId = '';
     } else {
-      return res.status(400).json({ message: 'Please provide image file or image URL!' });
+      return res.status(400).json({ message: 'Please provide image!' });
     }
 
     const product = new Product({
-      name,
-      price,
-      description: description || '',
-      category,
-      stock: stock || 10,
-      image,
-      imagePublicId
+      name, price, description: description || '',
+      category, stock: stock || 10,
+      image, imagePublicId, sizes
     });
 
     await product.save();
@@ -181,29 +173,31 @@ router.put('/product/edit/:id', adminAuth, upload.single('image'), async (req, r
     if (!product) return res.status(404).json({ message: 'Product not found!' });
 
     if (req.file) {
-      // Old image ಇದ್ದಾಗ ಮಾತ್ರ delete ಮಾಡು
-      if (product.imagePublicId && product.imagePublicId !== '') {
-        try {
-          await cloudinary.uploader.destroy(product.imagePublicId);
-        } catch (err) {
-          console.log('Cloudinary skip:', err.message);
-        }
+      if (product.imagePublicId) {
+        try { await cloudinary.uploader.destroy(product.imagePublicId); } catch {}
       }
-      const result = await cloudinary.uploader.upload(req.file.path, { folder: 'sdk-fashions' });
-      fs.unlinkSync(req.file.path);
+      const result = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+          { folder: 'sdk-fashions' },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        ).end(req.file.buffer);
+      });
       product.image = result.secure_url;
       product.imagePublicId = result.public_id;
     } else if (imageUrl && imageUrl !== '') {
       product.image = imageUrl;
       product.imagePublicId = '';
     }
-    // Image ಇಲ್ಲದಿದ್ರೆ existing image ಇರಲಿ ✅
 
     product.name = name || product.name;
     product.price = price || product.price;
     product.description = description || product.description;
     product.category = category || product.category;
     product.stock = stock || product.stock;
+    if (req.body.sizes) product.sizes = JSON.parse(req.body.sizes);
     await product.save();
     res.json({ message: 'Product updated!', product });
   } catch (err) {

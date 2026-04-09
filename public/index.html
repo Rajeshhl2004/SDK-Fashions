@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="manifest" href="/manifest.json">
+ <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#2874f0">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SDK Fashions">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SDK Fashions</title>
@@ -105,6 +106,7 @@
     </a>
     <a href="admin-login.html" style="font-size:12px;opacity:0.8;">Admin</a>
     <a href="profile.html" id="addressBtn" style="display:none;">📍 Address</a>
+    <button id="installBtn" style="display:none;background:white;color:#2874f0;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:13px;" onclick="installApp()">📱 Install App</button>
   </div>
 </nav>
 
@@ -190,6 +192,23 @@
       document.getElementById('productsGrid').innerHTML = '<p class="no-products">Failed to load products!</p>';
     }
   }
+  
+  let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBtn').style.display = 'block';
+});
+
+function installApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => {
+      deferredPrompt = null;
+      document.getElementById('installBtn').style.display = 'none';
+    });
+  }
+}
 
   function displayProducts(products) {
     const grid = document.getElementById('productsGrid');
@@ -198,7 +217,7 @@
       return;
     }
     grid.innerHTML = products.map(p => `
-      <div class="product-card">
+      <div class="product-card" onclick="window.location.href='/product.html?id=${p._id}'" style="cursor:pointer;">
         <img src="${p.image}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/220x220?text=No+Image'" />
         <div class="info">
           <span class="category-tag">${p.category}</span>

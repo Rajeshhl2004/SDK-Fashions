@@ -46,6 +46,10 @@
   <a href="/">← SDK Fashions</a>
   <h2>Shopping Cart</h2>
 </nav>
+<nav class="navbar">
+  <a href="/">← Home</a>
+  <h2>Shopping Cart</h2>
+</nav>
 
 <div class="container">
   <!-- Cart Items -->
@@ -98,6 +102,7 @@
   renderCart();
 
   function renderCart() {
+    
     const container = document.getElementById('cartItems');
     if (cart.length === 0) {
       container.innerHTML = '<div class="empty-cart"><p style="font-size:3rem;">🛒</p><p>Your cart is empty!</p><a href="/" style="color:#2874f0;">Continue Shopping</a></div>';
@@ -110,7 +115,7 @@
         <img src="${item.image}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/80'" />
         <div class="details">
           <p class="name">${item.name}</p>
-          <p class="price">₹${item.price}</p>
+          <p class="price">₹${item.price} ${item.size ? '| Size: <strong>' + item.size + '</strong>' : ''}</p>
           <div class="qty-controls">
             <button class="qty-btn" onclick="changeQty(${i}, -1)">−</button>
             <span class="qty-num">${item.quantity}</span>
